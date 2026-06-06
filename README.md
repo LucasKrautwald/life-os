@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ⚡ Life OS
 
-## Getting Started
+Plataforma web personal (uso exclusivo de Lucas) que centraliza finanzas,
+agencia, colegio, salud, hábitos y tareas diarias. Un "external brain" visual,
+automatizado y accionable.
 
-First, run the development server:
+> Stack: **Next.js 14 (App Router)** · **TypeScript** · **Tailwind CSS** ·
+> **Framer Motion** · **Supabase** · **Vercel**
+
+---
+
+## Empezar
 
 ```bash
+npm install
+cp .env.example .env.local   # opcional para el primer arranque
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre <http://localhost:3000>.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Modo demo (sin backend)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+La app **funciona sin configurar nada**: si no hay variables de Supabase, el
+middleware de auth se desactiva y todas las pantallas se renderizan con datos de
+ejemplo (`src/lib/mock.ts`). El login te deja entrar en "modo demo".
 
-## Learn More
+### Conectar Supabase
 
-To learn more about Next.js, take a look at the following resources:
+1. Crea un proyecto en [supabase.com](https://supabase.com).
+2. Ejecuta `supabase/schema.sql` en el SQL editor (crea tablas + RLS).
+3. Copia las llaves a `.env.local`:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=...
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+   SUPABASE_SERVICE_ROLE_KEY=...
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. Crea el usuario de Lucas en **Authentication → Users**.
 
-## Deploy on Vercel
+Con Supabase configurado, el middleware protege todas las rutas y redirige a
+`/login`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Estructura
+
+```
+src/
+  app/
+    (app)/              # rutas autenticadas (con sidebar)
+      page.tsx          # Dashboard diario
+      finances/         # Portafolio · Agencia · Personal
+      discipline/       # Hábitos + contribution graph
+      school/           # Materias IB + notas
+      health/           # Garmin / Apple Health
+      progress/         # Scores por área
+      food/             # Fase 2
+      settings/
+    api/todos/generate/ # genera los 3 todos (Claude o fallback)
+    login/
+  components/           # UI, layout, dashboard, etc.
+  lib/
+    supabase/           # clients browser/server + middleware
+    mock.ts             # datos de ejemplo (modo demo)
+    format.ts           # formato COP/USD/%/fechas
+    constants.ts        # navegación + estilos por área
+supabase/schema.sql     # tablas + Row Level Security
+```
+
+## Design system
+
+Minimal dark inspirado en Linear / Vercel. Tokens en
+`src/app/globals.css` (`--accent: #e8ff47`). Animaciones con Framer Motion,
+skeleton loaders y count-up en números.
+
+## APIs externas (pendientes de conectar)
+
+| Servicio | Uso | Estado |
+|----------|-----|--------|
+| Yahoo Finance | Precios de acciones | env listo |
+| Anthropic Claude (haiku) | 3 todos del día | route `/api/todos/generate` con fallback |
+| Garmin Connect | Sueño, HRV, pasos | env listo |
+| Apple Health (Shortcuts → webhook) | Peso, calorías | pendiente |
+
+## Roadmap (sprints)
+
+1. ✅ Base: Next.js + Auth + Layout + Design System
+2. ✅ Dashboard diario (todos manuales → IA)
+3. Finanzas — Portafolio (Excel + Yahoo Finance)
+4. Finanzas — Agencia + Personal
+5. Disciplina & Hábitos
+6. Colegio (+ Homework Hub)
+7. Health (Garmin + Apple Shortcuts)
+8. Progreso + scores automáticos
+9. Polish, animaciones, mobile
+10. Comida (opcional)
+```

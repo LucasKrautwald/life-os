@@ -3,21 +3,16 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardLabel } from "@/components/ui/Card";
 import { CountUp } from "@/components/ui/CountUp";
 import { Tabs } from "@/components/ui/Tabs";
-import { ProgressBar } from "@/components/ui/ProgressBar";
 import { PortfolioTab } from "@/components/finances/PortfolioTab";
 import { formatCOP, formatUSD } from "@/lib/format";
+import { REAL_AGENCY_CLIENTS } from "@/lib/mock";
 import { cn } from "@/lib/utils";
-import {
-  mockClients,
-  mockIncome,
-  mockExpenses,
-  BUDGET_LIMIT_COP,
-} from "@/lib/mock";
 
-const USD_COP = 4000; // rough display rate for the agency MRR conversion
+const USD_COP = 4000;
 
 function AgencyTab() {
-  const mrrUsd = mockClients
+  const clients = REAL_AGENCY_CLIENTS;
+  const mrrUsd = clients
     .filter((c) => c.status === "activo")
     .reduce((acc, c) => acc + c.monthlyUsd, 0);
 
@@ -42,15 +37,15 @@ function AgencyTab() {
         <Card index={1}>
           <CardLabel>Clientes</CardLabel>
           <p className="mono mt-3 text-3xl font-medium">
-            <CountUp value={mockClients.filter((c) => c.status === "activo").length} />
-            <span className="text-text-muted">/{mockClients.length}</span>
+            <CountUp value={clients.filter((c) => c.status === "activo").length} />
+            <span className="text-text-muted">/{clients.length}</span>
           </p>
           <p className="mt-1 text-xs text-text-muted">activos / totales</p>
         </Card>
       </div>
 
       <Card index={2} className="p-0">
-        {mockClients.map((c) => (
+        {clients.map((c) => (
           <div
             key={c.name}
             className="flex items-center gap-4 border-b border-border-subtle px-5 py-4 last:border-0"
@@ -76,71 +71,38 @@ function AgencyTab() {
 }
 
 function PersonalTab() {
-  const totalIncome = mockIncome.reduce((acc, i) => acc + i.amountCop, 0);
-  const totalExpenses = mockExpenses.reduce((acc, e) => acc + e.amountCop, 0);
-  const balance = totalIncome - totalExpenses;
-
   return (
     <div className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-3">
         <Card index={0}>
           <CardLabel>Ingresos</CardLabel>
-          <p className="mono mt-3 text-2xl font-medium text-success">
-            <CountUp value={totalIncome} formatStyle="cop" />
-          </p>
+          <p className="mono mt-3 text-2xl font-medium text-text-muted">--</p>
         </Card>
         <Card index={1}>
           <CardLabel>Gastos</CardLabel>
-          <p className="mono mt-3 text-2xl font-medium text-destructive">
-            <CountUp value={totalExpenses} formatStyle="cop" />
-          </p>
+          <p className="mono mt-3 text-2xl font-medium text-text-muted">--</p>
         </Card>
         <Card index={2}>
           <CardLabel>Balance</CardLabel>
-          <p className="mono mt-3 text-2xl font-medium">
-            <CountUp value={balance} formatStyle="cop" />
-          </p>
+          <p className="mono mt-3 text-2xl font-medium text-text-muted">--</p>
         </Card>
       </div>
 
-      <Card index={3}>
-        <div className="mb-3 flex items-center justify-between">
-          <CardLabel>Budget del mes</CardLabel>
-          <span className="mono text-xs text-text-secondary">
-            {formatCOP(totalExpenses)} / {formatCOP(BUDGET_LIMIT_COP)}
-          </span>
-        </div>
-        <ProgressBar value={totalExpenses} max={BUDGET_LIMIT_COP} />
-        <p className="mt-2 text-xs text-text-muted">
-          Quedan {formatCOP(Math.max(0, BUDGET_LIMIT_COP - totalExpenses))} de tu
-          límite.
+      <div className="card px-6 py-14 text-center">
+        <p className="text-sm font-medium text-text-secondary">
+          Sin finanzas personales registradas
         </p>
-      </Card>
-
-      <Card index={4} className="p-0">
-        <div className="flex items-center justify-between border-b border-border-subtle px-5 py-3">
-          <CardLabel>Gastos recientes</CardLabel>
-          <button className="flex items-center gap-1 text-xs text-text-secondary hover:text-accent">
-            <Plus className="h-3.5 w-3.5" /> Añadir
-          </button>
-        </div>
-        {mockExpenses
-          .slice()
-          .reverse()
-          .map((e, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-4 border-b border-border-subtle px-5 py-3 text-sm last:border-0"
-            >
-              <span className="mono w-20 shrink-0 text-xs text-text-muted">
-                {e.date.slice(5)}
-              </span>
-              <span className="w-28 shrink-0 text-text-secondary">{e.category}</span>
-              <span className="min-w-0 flex-1 truncate text-text-muted">{e.note}</span>
-              <span className="mono">{formatCOP(e.amountCop)}</span>
-            </div>
-          ))}
-      </Card>
+        <p className="mt-1 text-sm text-text-muted">
+          Añade ingresos y gastos para ver tu balance y budget del mes.
+        </p>
+        <button
+          type="button"
+          className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-[#333] px-4 py-1.5 text-sm text-[#888] transition-colors hover:border-[#e8ff47] hover:text-[#e8ff47]"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Añadir gasto
+        </button>
+      </div>
     </div>
   );
 }

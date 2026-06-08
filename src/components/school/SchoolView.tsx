@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { GraduationCap, ChevronDown } from "lucide-react";
+import { GraduationCap, ChevronDown, Plus } from "lucide-react";
 import { Card, CardLabel } from "@/components/ui/Card";
 import { CountUp } from "@/components/ui/CountUp";
 import { Sparkline } from "@/components/ui/Sparkline";
@@ -17,41 +17,13 @@ interface Grade {
   max: number;
 }
 
-const DESCRIPTIONS = [
-  "Quiz",
-  "Examen parcial",
-  "Tarea evaluada",
-  "Laboratorio",
-  "Ensayo",
-  "Examen final",
-  "Presentación",
-  "Test corto",
-];
-
-const MONTHS = ["Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep"];
-
-/** Deterministic synthetic grade history derived from the subject average. */
-function buildGrades(subject: Subject): Grade[] {
-  return Array.from({ length: subject.gradeCount }, (_, i) => {
-    const wobble = Math.sin(i * 1.3) * 0.6 + (i / subject.gradeCount) * 0.5 - 0.25;
-    const grade = Math.min(7, Math.max(3, +(subject.average + wobble).toFixed(1)));
-    return {
-      date: `${MONTHS[i % MONTHS.length]} ${5 + ((i * 7) % 22)}`,
-      description: `${DESCRIPTIONS[i % DESCRIPTIONS.length]} ${Math.floor(i / DESCRIPTIONS.length) + 1}`,
-      grade,
-      max: 7,
-    };
-  });
-}
-
 function gradeColor(value: number): string {
   if (value >= 6) return "text-success";
   if (value >= 5) return "text-accent";
   return "text-destructive";
 }
 
-function SubjectDetail({ subject }: { subject: Subject }) {
-  const grades = buildGrades(subject);
+function SubjectDetail({ grades }: { grades: Grade[] }) {
   const chart: TrendPoint[] = grades.map((g, i) => ({
     label: `N${i + 1}`,
     value: g.grade,
@@ -59,35 +31,43 @@ function SubjectDetail({ subject }: { subject: Subject }) {
 
   return (
     <div className="grid gap-6 border-t border-border-subtle p-5 lg:grid-cols-[1fr_1.1fr]">
-      {/* Grades table */}
       <div className="min-w-0">
         <CardLabel>Notas</CardLabel>
-        <div className="mt-3 overflow-hidden rounded-lg border border-border-subtle">
-          <div className="grid grid-cols-[1fr_auto_auto] gap-3 bg-bg-secondary/60 px-3 py-2 text-[10px] uppercase tracking-wider text-text-muted">
-            <span>Descripción</span>
-            <span className="text-right">Fecha</span>
-            <span className="text-right">Nota</span>
-          </div>
-          {grades.map((g, i) => (
-            <div
-              key={i}
-              className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-t border-border-subtle px-3 py-2 text-sm"
-            >
-              <span className="truncate text-text-secondary">{g.description}</span>
-              <span className="mono text-right text-xs text-text-muted">{g.date}</span>
-              <span className={cn("mono text-right font-medium", gradeColor(g.grade))}>
-                {g.grade.toFixed(1)}
-              </span>
+        {grades.length === 0 ? (
+          <p className="mt-3 text-sm text-text-muted">Sin notas registradas.</p>
+        ) : (
+          <div className="mt-3 overflow-hidden rounded-lg border border-border-subtle">
+            <div className="grid grid-cols-[1fr_auto_auto] gap-3 bg-bg-secondary/60 px-3 py-2 text-[10px] uppercase tracking-wider text-text-muted">
+              <span>Descripción</span>
+              <span className="text-right">Fecha</span>
+              <span className="text-right">Nota</span>
             </div>
-          ))}
-        </div>
+            {grades.map((g, i) => (
+              <div
+                key={i}
+                className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-t border-border-subtle px-3 py-2 text-sm"
+              >
+                <span className="truncate text-text-secondary">{g.description}</span>
+                <span className="mono text-right text-xs text-text-muted">{g.date}</span>
+                <span className={cn("mono text-right font-medium", gradeColor(g.grade))}>
+                  {g.grade.toFixed(1)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Chart */}
       <div className="min-w-0">
         <CardLabel>Evolución</CardLabel>
         <div className="mt-3">
-          <TrendChart data={chart} height={232} />
+          {chart.length > 0 ? (
+            <TrendChart data={chart} height={232} />
+          ) : (
+            <div className="flex h-[232px] items-center justify-center rounded-lg border border-border-subtle text-sm text-text-muted">
+              Sin historial de notas
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -105,8 +85,7 @@ function SubjectCard({
   onToggle: () => void;
   index: number;
 }) {
-  const grades = buildGrades(subject);
-  const spark = grades.map((g) => g.grade);
+  const spark: number[] = [];
 
   return (
     <motion.div
@@ -129,7 +108,9 @@ function SubjectCard({
           </p>
         </div>
 
-        <Sparkline data={spark} width={64} height={28} fill={false} />
+        {spark.length > 0 && (
+          <Sparkline data={spark} width={64} height={28} fill={false} />
+        )}
 
         <div className="flex items-baseline gap-1">
           <span className={cn("mono text-3xl font-medium", gradeColor(subject.average))}>
@@ -157,7 +138,7 @@ function SubjectCard({
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
           >
-            <SubjectDetail subject={subject} />
+            <SubjectDetail grades={[]} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -168,14 +149,38 @@ function SubjectCard({
 export function SchoolView({ subjects }: { subjects: Subject[] }) {
   const [openId, setOpenId] = useState<string | null>(null);
 
+  if (subjects.length === 0) {
+    return (
+      <div className="card flex flex-col items-center justify-center px-6 py-16 text-center">
+        <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-bg-hover text-text-muted">
+          <GraduationCap className="h-6 w-6" />
+        </span>
+        <p className="text-sm font-medium text-text-secondary">
+          No hay materias todavía
+        </p>
+        <p className="mt-1 max-w-sm text-sm text-text-muted">
+          Añade tus materias IB para registrar notas y ver tu promedio.
+        </p>
+        <button
+          type="button"
+          className="mt-5 rounded-full border border-[#333] px-4 py-1.5 text-sm text-[#888] transition-colors hover:border-[#e8ff47] hover:text-[#e8ff47]"
+        >
+          <span className="flex items-center gap-1.5">
+            <Plus className="h-3.5 w-3.5" />
+            Añadir materia
+          </span>
+        </button>
+      </div>
+    );
+  }
+
   const overall =
-    subjects.reduce((acc, s) => acc + s.average, 0) / (subjects.length || 1);
+    subjects.reduce((acc, s) => acc + s.average, 0) / subjects.length;
   const totalGrades = subjects.reduce((acc, s) => acc + s.gradeCount, 0);
   const best = [...subjects].sort((a, b) => b.average - a.average)[0];
 
   return (
     <div className="space-y-6">
-      {/* IB score summary */}
       <Card hover className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent-dim text-accent">
@@ -207,7 +212,6 @@ export function SchoolView({ subjects }: { subjects: Subject[] }) {
         </div>
       </Card>
 
-      {/* Subject grid */}
       <div className="grid gap-3 md:grid-cols-2">
         {subjects.map((s, i) => (
           <SubjectCard

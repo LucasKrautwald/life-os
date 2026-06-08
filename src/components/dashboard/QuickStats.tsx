@@ -3,18 +3,9 @@
 import { Wallet, TrendingUp, Moon, CheckCircle2, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Card, CardLabel } from "@/components/ui/Card";
 import { CountUp } from "@/components/ui/CountUp";
-import { Sparkline } from "@/components/ui/Sparkline";
 import { formatPct } from "@/lib/format";
 import type { QuickStats as Stats } from "@/lib/mock";
 import { cn } from "@/lib/utils";
-
-// Small illustrative trends (mock) for the sparklines.
-const SPARKS = {
-  balance: [120, 90, 160, 140, 210, 180, 280],
-  portfolio: [17.9, 18.0, 17.8, 18.1, 18.2, 18.3, 18.45],
-  sleep: [6.8, 7.2, 6.5, 7.6, 7.1, 7.0, 7.4],
-  habits: [2, 4, 3, 5, 3, 4, 3],
-};
 
 const COLORS = {
   finances: "#e8ff47",
@@ -27,8 +18,40 @@ const leftBorder = (color: string) => ({
   borderLeft: `3px solid ${color}`,
 });
 
+function StatValue({
+  value,
+  formatStyle,
+  decimals,
+  suffix,
+  fallback = "--",
+}: {
+  value: number | null;
+  formatStyle?: "cop" | "usd";
+  decimals?: number;
+  suffix?: string;
+  fallback?: string;
+}) {
+  if (value == null) {
+    return (
+      <span className="mono text-4xl font-medium tracking-tight text-text-muted">
+        {fallback}
+      </span>
+    );
+  }
+  return (
+    <span className="mono text-4xl font-medium tracking-tight">
+      <CountUp
+        value={value}
+        formatStyle={formatStyle}
+        decimals={decimals}
+        suffix={suffix}
+      />
+    </span>
+  );
+}
+
 export function QuickStats({ stats }: { stats: Stats }) {
-  const positive = stats.portfolioChangePct >= 0;
+  const positive = (stats.portfolioChangePct ?? 0) >= 0;
   const Arrow = positive ? ArrowUpRight : ArrowDownRight;
 
   return (
@@ -38,13 +61,10 @@ export function QuickStats({ stats }: { stats: Stats }) {
           <CardLabel className="text-[10px]">Balance mes</CardLabel>
           <Wallet className="h-4 w-4 text-text-muted" />
         </div>
-        <p className="mono mt-2 text-4xl font-medium tracking-tight">
-          <CountUp value={stats.monthlyBalanceCop} formatStyle="cop" />
+        <p className="mt-2">
+          <StatValue value={stats.monthlyBalanceCop} formatStyle="cop" />
         </p>
-        <div className="mt-2 flex items-end justify-between">
-          <span className="text-xs text-text-muted">ingresos − gastos</span>
-          <Sparkline data={SPARKS.balance} stroke={COLORS.finances} />
-        </div>
+        <p className="mt-2 text-xs text-text-muted">ingresos − gastos</p>
       </Card>
 
       <Card hover index={1} style={leftBorder(COLORS.portfolio)}>
@@ -52,23 +72,23 @@ export function QuickStats({ stats }: { stats: Stats }) {
           <CardLabel className="text-[10px]">Portafolio</CardLabel>
           <TrendingUp className="h-4 w-4 text-text-muted" />
         </div>
-        <p className="mono mt-2 text-4xl font-medium tracking-tight">
-          <CountUp value={stats.portfolioValueCop} formatStyle="cop" />
+        <p className="mt-2">
+          <StatValue value={stats.portfolioValueCop} formatStyle="cop" />
         </p>
-        <div className="mt-2 flex items-end justify-between">
-          <span
-            className={cn(
-              "mono flex items-center gap-0.5 text-xs",
-              positive ? "text-success" : "text-destructive"
-            )}
-          >
-            <Arrow className="h-3 w-3" />
-            {formatPct(stats.portfolioChangePct)}
-          </span>
-          <Sparkline
-            data={SPARKS.portfolio}
-            stroke={positive ? COLORS.portfolio : "var(--destructive)"}
-          />
+        <div className="mt-2">
+          {stats.portfolioChangePct != null ? (
+            <span
+              className={cn(
+                "mono flex items-center gap-0.5 text-xs",
+                positive ? "text-success" : "text-destructive"
+              )}
+            >
+              <Arrow className="h-3 w-3" />
+              {formatPct(stats.portfolioChangePct)}
+            </span>
+          ) : (
+            <span className="text-xs text-text-muted">Sin datos de Sheets</span>
+          )}
         </div>
       </Card>
 
@@ -77,13 +97,15 @@ export function QuickStats({ stats }: { stats: Stats }) {
           <CardLabel className="text-[10px]">Sueño</CardLabel>
           <Moon className="h-4 w-4 text-text-muted" />
         </div>
-        <p className="mono mt-2 text-4xl font-medium tracking-tight">
-          <CountUp value={stats.sleepHours} decimals={1} suffix="h" />
+        <p className="mt-2">
+          <StatValue
+            value={stats.sleepHours}
+            decimals={1}
+            suffix="h"
+            fallback="--"
+          />
         </p>
-        <div className="mt-2 flex items-end justify-between">
-          <span className="text-xs text-text-muted">anoche · Garmin</span>
-          <Sparkline data={SPARKS.sleep} stroke={COLORS.sleep} />
-        </div>
+        <p className="mt-2 text-xs text-text-muted">anoche · Garmin</p>
       </Card>
 
       <Card hover index={3} style={leftBorder(COLORS.habits)}>
@@ -95,10 +117,7 @@ export function QuickStats({ stats }: { stats: Stats }) {
           <CountUp value={stats.habitsDone} />
           <span className="text-text-muted">/{stats.habitsTotal}</span>
         </p>
-        <div className="mt-2 flex items-end justify-between">
-          <span className="text-xs text-text-muted">completados hoy</span>
-          <Sparkline data={SPARKS.habits} stroke={COLORS.habits} />
-        </div>
+        <p className="mt-2 text-xs text-text-muted">completados hoy</p>
       </Card>
     </section>
   );

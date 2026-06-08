@@ -1,7 +1,7 @@
 /**
  * Centralized Supabase env access. The app is designed to run even when
  * Supabase is not yet configured (e.g. local first-run), falling back to
- * mock data so the UI is always explorable.
+ * configured (e.g. local first-run), falling back to empty states.
  */
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 export const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";

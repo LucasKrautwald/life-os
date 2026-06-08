@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import type { ContributionDay } from "@/app/actions/habits";
 
 const LEVEL_COLORS = [
   "var(--bg-hover)",
@@ -10,12 +11,11 @@ const LEVEL_COLORS = [
   "var(--accent)",
 ];
 
-/** GitHub-style contribution heatmap. `levels` is a flat array (oldest → newest). */
-export function ContributionGraph({ levels }: { levels: number[] }) {
-  // Group into columns of 7 (weeks).
-  const weeks: number[][] = [];
-  for (let i = 0; i < levels.length; i += 7) {
-    weeks.push(levels.slice(i, i + 7));
+/** GitHub-style contribution heatmap. Oldest → newest. */
+export function ContributionGraph({ days }: { days: ContributionDay[] }) {
+  const weeks: ContributionDay[][] = [];
+  for (let i = 0; i < days.length; i += 7) {
+    weeks.push(days.slice(i, i + 7));
   }
 
   return (
@@ -23,15 +23,19 @@ export function ContributionGraph({ levels }: { levels: number[] }) {
       <div className="flex gap-1 overflow-x-auto">
         {weeks.map((week, wi) => (
           <div key={wi} className="flex flex-col gap-1">
-            {week.map((level, di) => (
+            {week.map((day, di) => (
               <motion.div
                 key={di}
                 initial={{ opacity: 0, scale: 0.6 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: (wi * 7 + di) * 0.004, duration: 0.2 }}
                 className="contrib-cell"
-                style={{ background: LEVEL_COLORS[level] }}
-                title={`${level} de 5 hábitos`}
+                style={{ background: LEVEL_COLORS[day.level] }}
+                title={
+                  day.total > 0
+                    ? `${day.completed}/${day.total} hábitos (${Math.round((day.completed / day.total) * 100)}%)`
+                    : "Sin hábitos"
+                }
               />
             ))}
           </div>

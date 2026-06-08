@@ -1,8 +1,17 @@
 import { PageHeader } from "@/components/ui/PageHeader";
 import { DisciplineView } from "@/components/discipline/DisciplineView";
-import { mockHabits, buildContributions } from "@/lib/mock";
+import { getHabitsData } from "@/app/actions/habits";
+import { getTodayHighlight } from "@/app/actions/highlights";
+import { getTodaySleepHours } from "@/app/actions/health";
 
-export default function DisciplinePage() {
+export default async function DisciplinePage() {
+  const [{ habits, contributions, score }, highlight, sleepHours] =
+    await Promise.all([
+      getHabitsData(),
+      getTodayHighlight(),
+      getTodaySleepHours(),
+    ]);
+
   return (
     <div>
       <PageHeader
@@ -10,7 +19,13 @@ export default function DisciplinePage() {
         subtitle="Checklist diario, rachas y consistencia de los últimos 90 días."
       />
 
-      <DisciplineView initial={mockHabits} contributions={buildContributions(91)} />
+      <DisciplineView
+        initial={habits}
+        contributions={contributions}
+        initialScore={score}
+        highlight={highlight}
+        sleepHours={sleepHours}
+      />
     </div>
   );
 }

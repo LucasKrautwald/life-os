@@ -1,15 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Reorder, AnimatePresence, motion } from "framer-motion";
-import { Check, RefreshCw, GripVertical, X, Pencil } from "lucide-react";
+import { Check, RefreshCw, GripVertical, X, Pencil, Plus } from "lucide-react";
 import { AreaTag } from "@/components/ui/AreaTag";
 import { AREA_BORDER } from "@/lib/constants";
-import type { Area, Todo } from "@/lib/mock";
+import type { Todo } from "@/lib/mock";
 import { cn } from "@/lib/utils";
-
-let idCounter = 1000;
-const nextId = () => String(++idCounter);
+import {
+  addTodo,
+  deleteTodo,
+  regenerateTodos,
+  setTodoCompleted,
+  updateTodoText,
+} from "@/app/actions/todos";
 
 function TodoRow({
   todo,
@@ -124,31 +128,45 @@ function TodoRow({
 export function TodosWidget({ initial }: { initial: Todo[] }) {
   const [todos, setTodos] = useState<Todo[]>(initial);
   const [loading, setLoading] = useState(false);
+  const [, startTransition] = useTransition();
 
-  const update = (id: string, patch: Partial<Todo>) =>
+  const patchLocal = (id: string, patch: Partial<Todo>) =>
     setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
 
-  const remove = (id: string) =>
+  const toggle = (id: string) => {
+    const current = todos.find((t) => t.id === id);
+    if (!current) return;
+    const next = !current.completed;
+    patchLocal(id, { completed: next });
+    startTransition(() => {
+      void setTodoCompleted(id, next);
+    });
+  };
+
+  const edit = (id: string, text: string) => {
+    patchLocal(id, { text });
+    startTransition(() => {
+      void updateTodoText(id, text);
+    });
+  };
+
+  const remove = (id: string) => {
     setTodos((prev) => prev.filter((t) => t.id !== id));
+    startTransition(() => {
+      void deleteTodo(id);
+    });
+  };
+
+  const add = async () => {
+    const created = await addTodo("Nueva tarea");
+    if (created) setTodos((prev) => [...prev, created]);
+  };
 
   const regenerate = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/todos/generate", { method: "POST" });
-      const data = (await res.json()) as {
-        todos: { text: string; area: Area }[];
-      };
-      setTodos(
-        data.todos.map((t) => ({
-          id: nextId(),
-          text: t.text,
-          area: t.area,
-          completed: false,
-          aiGenerated: true,
-        }))
-      );
-    } catch {
-      // keep current todos on failure
+      const next = await regenerateTodos();
+      if (next.length > 0) setTodos(next);
     } finally {
       setLoading(false);
     }
@@ -165,16 +183,23 @@ export function TodosWidget({ initial }: { initial: Todo[] }) {
             · {doneCount}/{todos.length}
           </span>
         </h2>
-        <button
-          onClick={regenerate}
-          disabled={loading}
-          className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs text-text-secondary transition-colors hover:border-accent/30 hover:text-accent disabled:opacity-50"
-        >
-          <RefreshCw
-            className={cn("h-3.5 w-3.5", loading && "animate-spin")}
-          />
-          Regenerar
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={add}
+            className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs text-text-secondary transition-colors hover:border-accent/30 hover:text-accent"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Añadir
+          </button>
+          <button
+            onClick={regenerate}
+            disabled={loading}
+            className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs text-text-secondary transition-colors hover:border-accent/30 hover:text-accent disabled:opacity-50"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+            Regenerar
+          </button>
+        </div>
       </div>
 
       <Reorder.Group
@@ -194,8 +219,8 @@ export function TodosWidget({ initial }: { initial: Todo[] }) {
             >
               <TodoRow
                 todo={todo}
-                onToggle={() => update(todo.id, { completed: !todo.completed })}
-                onEdit={(text) => update(todo.id, { text })}
+                onToggle={() => toggle(todo.id)}
+                onEdit={(text) => edit(todo.id, text)}
                 onRemove={() => remove(todo.id)}
               />
             </motion.div>

@@ -20,20 +20,16 @@ const COLORS: Record<string, string> = {
   agency: "#b388ff",
 };
 
-export function ScoreHistory({ scores }: { scores: AreaScore[] }) {
-  const data = Array.from({ length: 30 }, (_, i) => {
-    const point: Record<string, number | string> = { label: i + 1 };
-    scores.forEach((s) => {
-      point[s.key] = Math.round(
-        Math.min(100, Math.max(40, s.score - s.delta + (i / 30) * s.delta + Math.sin(i / 3) * 4))
-      );
-    });
-    return point;
-  });
-
+export function ScoreHistory({
+  scores,
+  history,
+}: {
+  scores: AreaScore[];
+  history: Record<string, number | string>[];
+}) {
   return (
     <ResponsiveContainer width="100%" height={280}>
-      <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+      <LineChart data={history} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
         <CartesianGrid stroke="var(--border-subtle)" vertical={false} />
         <XAxis
           dataKey="label"
@@ -44,7 +40,7 @@ export function ScoreHistory({ scores }: { scores: AreaScore[] }) {
           minTickGap={24}
         />
         <YAxis
-          domain={[40, 100]}
+          domain={[0, 100]}
           stroke="var(--text-muted)"
           tick={{ fontSize: 11 }}
           tickLine={false}
@@ -69,6 +65,7 @@ export function ScoreHistory({ scores }: { scores: AreaScore[] }) {
             stroke={COLORS[s.key]}
             strokeWidth={2}
             dot={false}
+            connectNulls
           />
         ))}
       </LineChart>

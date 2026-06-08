@@ -1,21 +1,11 @@
 import { FileUp, CalendarClock } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Card } from "@/components/ui/Card";
 import { SchoolView } from "@/components/school/SchoolView";
-import { mockSubjects, mockAgenda } from "@/lib/mock";
-import { cn } from "@/lib/utils";
-
-/** Color-code a deadline badge by urgency. */
-function dueStyle(due: string): string {
-  const d = due.toLowerCase();
-  if (d.includes("hoy"))
-    return "border-destructive/30 bg-destructive/10 text-destructive";
-  if (d.includes("mañana"))
-    return "border-amber-500/30 bg-amber-500/10 text-amber-300";
-  return "border-success/30 bg-success/10 text-success";
-}
+import type { Subject } from "@/lib/mock";
 
 export default function SchoolPage() {
+  const subjects: Subject[] = [];
+
   return (
     <div className="space-y-10">
       <PageHeader
@@ -28,41 +18,22 @@ export default function SchoolPage() {
         }
       />
 
-      <SchoolView subjects={mockSubjects} />
+      <SchoolView subjects={subjects} />
 
-      {/* Tareas pendientes — clearly separated section */}
       <section>
         <div className="mb-3 flex items-center gap-2">
           <h2 className="text-sm font-medium text-text-secondary">
             Tareas pendientes
           </h2>
-          <span className="mono rounded-full bg-bg-hover px-2 py-0.5 text-[10px] text-text-muted">
-            {mockAgenda.length}
-          </span>
         </div>
 
-        <div className="space-y-2.5">
-          {mockAgenda.map((item, i) => (
-            <Card key={item.id} index={i} hover className="flex items-center gap-4 p-4">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-bg-hover text-text-muted">
-                <CalendarClock className="h-4 w-4" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{item.title}</p>
-                <p className="mt-0.5 truncate text-xs text-text-muted">
-                  {item.subject}
-                </p>
-              </div>
-              <span
-                className={cn(
-                  "shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide",
-                  dueStyle(item.due)
-                )}
-              >
-                {item.due}
-              </span>
-            </Card>
-          ))}
+        <div className="card flex flex-col items-center justify-center px-6 py-12 text-center">
+          <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-bg-hover text-text-muted">
+            <CalendarClock className="h-5 w-5" />
+          </span>
+          <p className="text-sm text-text-muted">
+            No hay tareas pendientes registradas.
+          </p>
         </div>
       </section>
     </div>

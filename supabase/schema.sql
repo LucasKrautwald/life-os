@@ -17,9 +17,14 @@ create table if not exists public.daily_todos (
   text text not null,
   completed boolean not null default false,
   ai_generated boolean not null default false,
+  area text not null default 'discipline',
   "order" int not null default 0,
   created_at timestamptz not null default now()
 );
+
+-- If the table already existed without `area`, add it:
+alter table public.daily_todos
+  add column if not exists area text not null default 'discipline';
 
 -- ----------------------------------------------------------------
 -- Habits
@@ -151,6 +156,18 @@ create table if not exists public.daily_scores (
   unique (user_id, date)
 );
 
+-- ----------------------------------------------------------------
+-- Daily highlights (momento memorable)
+-- ----------------------------------------------------------------
+create table if not exists public.daily_highlights (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  date date not null default current_date,
+  text text not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, date)
+);
+
 -- ============================================================
 -- Row Level Security
 -- Each user can only access their own rows. Child tables are
@@ -162,7 +179,7 @@ declare
   user_tables text[] := array[
     'daily_todos','habits','portfolio_positions','portfolio_snapshots',
     'agency_clients','personal_income','personal_expenses','subjects',
-    'health_logs','daily_scores'
+    'health_logs','daily_scores','daily_highlights'
   ];
 begin
   foreach t in array user_tables loop
@@ -173,6 +190,23 @@ begin
     $f$, t);
   end loop;
 end $$;
+
+-- Explicit todos policy (idempotent) — guards against the loop above not
+-- having applied on an earlier deploy. Safe to run on its own.
+alter table public.daily_todos enable row level security;
+drop policy if exists "users_own_todos" on public.daily_todos;
+create policy "users_own_todos" on public.daily_todos
+  for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- Daily highlights (idempotent)
+alter table public.daily_highlights enable row level security;
+drop policy if exists "owner_highlights" on public.daily_highlights;
+create policy "owner_highlights" on public.daily_highlights
+  for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 -- Child tables: scope via the parent relationship.
 alter table public.habit_logs enable row level security;

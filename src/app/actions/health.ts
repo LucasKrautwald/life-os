@@ -3,7 +3,6 @@
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { requireAuthUser } from "@/lib/supabase/auth";
 import { todayISO, lastNDates } from "@/lib/date";
-import type { Area } from "@/lib/mock";
 
 export interface HealthSnapshot {
   sleepHours: number | null;
